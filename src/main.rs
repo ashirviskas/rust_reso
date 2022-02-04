@@ -121,48 +121,53 @@ fn init(input_path: &str) {
     let mut nodes: Vec<Node> = Vec::new();
      // A redundant loop to demonstrate reading image data
      for x in 0..img_width {
+         println!("{}", x);
         for y in 0..img_height {
             let mut pixel = img.get_pixel(x, y);
             // println!("pixel: {} {} {}", pixel.0[0], pixel.0[1], pixel.0[2]);
             let mut node = Node::new(x * img_height + y, Color::new(pixel.0[0], pixel.0[1], pixel.0[2]));
+            if node.nodetype == NodeType::None {
+                continue;
+            }
             node.add_pixel(x, y);
             // Checking for nodes in pixels before and if they match, merge them
             let mut found = false;
             let mut startval_x = x;
             let mut startval_y = y;
             if x != 0{
-                startval_x == x -1;
+                startval_x = x - 1;
             }
             if y != 0 {
-                startval_y == y -1;
+                startval_y = y - 1;
             }
-            'outer: for xx in startval_x..x {
-                for yy in startval_y..y {
-                    if xx >= 0 && xx < img_width && yy >= 0 && yy < img_height {
+            'outer: for xx in startval_x..x + 1 {
+                for yy in startval_y..y + 1  {
+                    if xx < img_width && yy < img_height {
                         if xx == x && yy == y {
                             continue;
                         }
-                        for node_other_idx in 0..nodes.len() {
+                        for node_other_idx in (0..nodes.len()).rev() {
                             let mut node_other = &nodes[node_other_idx];
                             if node_other.pixels.contains(&PixelCoords { x: xx, y: yy }) {
                                 if node_other.color == node.color {
-                                    let new_node = node.merge(node_other);
+                                    // println!("Merging nodes: {} {}", node.id, node_other.id);
+                                    let node = node_other.merge(&node);
                                     found = true;
-                                    nodes[node_other_idx] = new_node;
+                                    // nodes[node_other_idx] = new_node;
+                                    nodes.remove(node_other_idx);
                                 }
                             }
                         }
                     }
                 }
             }
-            if !found {
-                nodes.push(node);
-            }
+            nodes.push(node);
         }
     }
-    for n in nodes {
+    for n in &nodes {
         println!("{} {}", n.id, n.color.r);
     }
+    println!("{}", nodes.len());
 }
 
 fn main() {
