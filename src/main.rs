@@ -113,7 +113,7 @@ fn init(input_path: &str) {
     let img_height = img.dimensions().1;
 
     let mut nodes: Vec<Node> = Vec::new();
-     // A redundant loop to demonstrate reading image data
+     // TODO: map nodes by exploring neighbours instead of looking through all the pixels
      for x in 0..img_width {
          println!("{}", x);
         for y in 0..img_height {
