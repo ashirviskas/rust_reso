@@ -140,8 +140,8 @@ fn init(input_path: &str) {
             if y != 0 {
                 startval_y = y - 1;
             }
-            'outer: for xx in startval_x..x + 1 {
-                for yy in startval_y..y + 1  {
+            'outer: for xx in startval_x..x + 2 {
+                for yy in startval_y..y + 2 {
                     if xx < img_width && yy < img_height {
                         if xx == x && yy == y {
                             continue;
@@ -151,9 +151,8 @@ fn init(input_path: &str) {
                             if node_other.pixels.contains(&PixelCoords { x: xx, y: yy }) {
                                 if node_other.color == node.color {
                                     // println!("Merging nodes: {} {}", node.id, node_other.id);
-                                    let node = node_other.merge(&node);
+                                    node = node_other.merge(&node);
                                     found = true;
-                                    // nodes[node_other_idx] = new_node;
                                     nodes.remove(node_other_idx);
                                 }
                             }
@@ -165,9 +164,24 @@ fn init(input_path: &str) {
         }
     }
     for n in &nodes {
-        println!("{} {}", n.id, n.color.r);
+        // println!("{} {}", n.id, n.color.r);
     }
     println!("{}", nodes.len());
+
+    let mut new_img: RgbImage = ImageBuffer::new(img_width, img_height);
+
+    for n in &nodes {
+        for p in &n.pixels {
+            let mut pixel = new_img.get_pixel_mut(p.x, p.y);
+            pixel.0[0] = (n.id % 255 as u32) as u8;
+            pixel.0[1] = (n.id / 2 % 255 as u32) as u8;
+            pixel.0[2] = (n.id / 3 % 255 as u32) as u8;
+            // pixel.0[0] = n.color.r;
+            // pixel.0[1] = n.color.g;
+            // pixel.0[2] = n.color.b;
+        }
+    }
+    new_img.save("output.png").unwrap();
 }
 
 fn main() {
