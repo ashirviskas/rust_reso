@@ -138,15 +138,6 @@ fn explore_node(node: &Node, image: &DynamicImage, explored_pixels: &mut Vec<Vec
                     }
                 }
             }
-            // if !explored_pixels[pixel.y as usize][pixel.x as usize] {
-            //     explored_pixels[pixel.y as usize][pixel.x as usize] = true;
-            //     let pixel_color = image.get_pixel(pixel.x, pixel.y);
-            //     if pixel_color[0] == node.color.r && pixel_color[1] == node.color.g && pixel_color[2] == node.color.b {
-            //         node.add_pixel(pixel.x, pixel.y);
-            //         explore_node(node, image, explored_pixels);
-            //     }
-            // }
-           
         }
         prev_node = prev_node.merge(&next_node);
         cur_node = next_node;
@@ -182,56 +173,6 @@ fn init(input_path: &str) {
         }
     }
     nodes[0] = explore_node(&nodes[0], &img, &mut explored_pixels);
-
-    // takes 2m 5s to finish
-    //  for x in 0..img_width {
-    //      println!("{}", x);
-    //     for y in 0..img_height {
-    //         let pixel = img.get_pixel(x, y);
-    //         // println!("pixel: {} {} {}", pixel.0[0], pixel.0[1], pixel.0[2]);
-    //         let mut node = Node::new(x * img_height + y, Color::new(pixel.0[0], pixel.0[1], pixel.0[2]));
-    //         if node.nodetype == NodeType::None {
-    //             continue;
-    //         }
-    //         node.add_pixel(x, y);
-    //         // Checking for nodes in pixels before and if they match, merge them
-    //         let mut startval_x = x;
-    //         let mut startval_y = y;
-    //         if x != 0{
-    //             startval_x = x - 1;
-    //         }
-    //         if y != 0 {
-    //             startval_y = y - 1;
-    //         }
-    //         for xx in startval_x..x + 2 {
-    //             for yy in startval_y..y + 2 {
-    //                 if xx < img_width && yy < img_height {
-    //                     if xx == x && yy == y {
-    //                         continue;
-    //                     }
-    //                     for node_other_idx in (0..nodes.len()).rev() {
-    //                         let node_other = &nodes[node_other_idx];
-    //                         if node_other.pixels.contains(&PixelCoords { x: xx, y: yy }) {
-    //                             if node_other.color == node.color {
-    //                                 // println!("Merging nodes: {} {}", node.id, node_other.id);
-    //                                 node = node_other.merge(&node);
-    //                                 nodes.remove(node_other_idx);
-    //                             } 
-    //                             // else {
-    //                             //     // println!("Adding connection: {} {}", node.id, node_other.id);
-    //                             //     node.add_connection(node_other.clone());
-    //                             // }
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //         nodes.push(node);
-    //     }
-    // }
-    // for n in &nodes {
-    //     println!("{} {}", n.id, n.color.r);
-    // }
     println!("{}", nodes.len());
 
     let mut new_img: RgbImage = ImageBuffer::new(img_width, img_height);
