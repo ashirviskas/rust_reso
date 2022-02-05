@@ -24,6 +24,7 @@ struct Node {
     pixels: Vec<PixelCoords>,
     connections: Vec<u32>,
     nodetype: NodeType,
+    explored: bool,
 }
 
 #[derive(PartialEq, Copy, Clone)]
@@ -76,11 +77,16 @@ impl Node {
             id: id,
             pixels: Vec::new(),
             connections: Vec::new(),
+            explored: false,
         }
     }
 
     fn add_pixel(&mut self, x: u32, y: u32) {
         self.pixels.push(PixelCoords { x: x, y: y });
+    }
+
+    fn make_explored(&mut self) {
+        self.explored = true;
     }
 
     fn add_connection(&mut self, node: Node) {
@@ -102,11 +108,12 @@ impl Node {
                 temp.extend(other.connections.iter().cloned());
                 temp
             },
+            explored: self.explored,
         }
     }
 }
 
-fn explore_node(node: &Node, image: &DynamicImage, explored_pixels: &mut Vec<Vec<bool>>) -> Node {
+fn explore_node_cluster(node: &Node, image: &DynamicImage, explored_pixels: &mut Vec<Vec<bool>>, explore_neighbours: bool) -> Node {
     let mut prev_node = Node::new(node.id, node.color);
     prev_node = prev_node.merge(node);
     let mut cur_node = Node::new(node.id, node.color);
@@ -134,7 +141,7 @@ fn explore_node(node: &Node, image: &DynamicImage, explored_pixels: &mut Vec<Vec
                             // println!("{} {} {}", x, y, sum);
                             println!("{} {}", xx, yy);
                             next_node.add_pixel(xx as u32, yy as u32);
-                        }
+                        } 
                     }
                 }
             }
@@ -146,6 +153,7 @@ fn explore_node(node: &Node, image: &DynamicImage, explored_pixels: &mut Vec<Vec
         }
     }
     println!("Returning {:?}", prev_node.pixels.len());
+    prev_node.make_explored();
     prev_node
 }
 
@@ -158,21 +166,23 @@ fn init(input_path: &str) {
     let mut nodes: Vec<Node> = Vec::new();
      // TODO: map nodes by exploring neighbours instead of looking through all the pixels
     let mut explored_pixels:Vec<Vec<bool>> = vec![vec![false; img_height as usize]; img_width as usize];
-    // find first node
+    // find initial nodes
     'outer: for x in 0..img_width {
         for y in 0..img_height {
             let pixel = img.get_pixel(x, y);
             let color = Color::new(pixel[0], pixel[1], pixel[2]);
             if color.to_nodetype() != NodeType::None {
-                let mut node = Node::new(nodes.len() as u32, color);
-                node.add_pixel(x, y);
-                nodes.push(node);
-                // explored_pixels[x as usize][y as usize] = true;
-                break 'outer;
+                if !explored_pixels[x as usize][y as usize] {
+                    let mut node = Node::new(nodes.len() as u32, color);
+                    node.add_pixel(x, y);
+                    node = explore_node_cluster(&node, &img, &mut explored_pixels, true);
+                    nodes.push(node);
+                }
             }
         }
     }
-    nodes[0] = explore_node(&nodes[0], &img, &mut explored_pixels);
+    // exploring first node
+    // let (nodes[ = explore_node_cluster(&nodes[0], &img, &mut explored_pixels);
     println!("{}", nodes.len());
 
     let mut new_img: RgbImage = ImageBuffer::new(img_width, img_height);
