@@ -187,7 +187,7 @@ impl Node {
                         }
                     }
                     NodeType::Xor(true) => {
-                        if other.magic_number_a >= other.magic_number_b && other.magic_number_b == 1 {
+                        if other.magic_number_b % 2 == 1 {
                             self.magic_number_a += 1;
                             self.magic_number_b += 1;
                         } else {
