@@ -139,6 +139,9 @@ impl Node {
                     if id == 0 || id == self.id || id == u32::MAX {
                         continue;
                     }
+                    if x != pixel.x && y != pixel.y {
+                        continue;
+                    }
                     self.add_connection(id);
                 }
             }
@@ -176,7 +179,7 @@ impl Node {
             NodeType::Output(true) => {
                 match other.nodetype {
                     NodeType::And(true) => {
-                        if other.magic_number_a == other.magic_number_b {
+                        if other.magic_number_a == other.magic_number_b && other.magic_number_a > 0 {
                             self.magic_number_a += 1;
                             self.magic_number_b += 1;
                         } else {
@@ -184,7 +187,7 @@ impl Node {
                         }
                     }
                     NodeType::Xor(true) => {
-                        if other.magic_number_a != other.magic_number_b && other.magic_number_b != 0 {
+                        if other.magic_number_a >= other.magic_number_b && other.magic_number_b == 1 {
                             self.magic_number_a += 1;
                             self.magic_number_b += 1;
                         } else {
@@ -192,8 +195,30 @@ impl Node {
                         }
                     }
                     NodeType::Input(true) => {
-                        self.magic_number_a += 1;
-                        self.magic_number_b += 1;
+                        if other.magic_number_b != 0 {
+                            self.magic_number_a += 1;
+                            self.magic_number_b += 1;
+                        } else {
+                            self.magic_number_a += 1;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            NodeType::And(true) => {
+                match other.nodetype {
+                    NodeType::Input(true) => {
+                        self.magic_number_a = other.magic_number_a;
+                        self.magic_number_b = other.magic_number_b;
+                    }
+                    _ => {}
+                }
+            }
+            NodeType::Xor(true) => {
+                match other.nodetype {
+                    NodeType::Input(true) => {
+                        self.magic_number_a = other.magic_number_a;
+                        self.magic_number_b = other.magic_number_b;
                     }
                     _ => {}
                 }
@@ -431,12 +456,12 @@ fn simulation_loop(mappings: &BiMap<NodeType, Color>, nodes: &mut Vec<Node>, ste
             let node = nodes.get_mut(node_idx).unwrap();
             color_node(&node, &mut new_img);
         }
-        let image_path = format!("output_{}.png", i);
+        let image_path = format!("./output/output_{}.png", i);
         new_img.save(image_path).unwrap();
     }
 
    
 }
 fn main() {
-    init("/home/mati/personal_projects/reso_rust/reso.png");
+    init("./reso.png");
 }
