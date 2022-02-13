@@ -216,60 +216,72 @@ impl Node {
             },
             NodeType::OrangeWire(false) => match other.nodetype {
                 NodeType::Output(true) => {
-                    if other.magic_number_a == other.magic_number_b {
+                    if other.magic_number_b > 0 {
                         self.next_nodetype = NodeType::OrangeWire(true);
                     } else {
-                        self.next_nodetype = NodeType::OrangeWire(false);
+                        if self.next_nodetype != NodeType::OrangeWire(true) {
+                            self.next_nodetype = NodeType::OrangeWire(false);
+                        }
                     }
                 }
                 _ => {}
             },
             NodeType::OrangeWire(true) => match other.nodetype {
                 NodeType::Output(true) => {
-                    if other.magic_number_a == other.magic_number_b {
+                    if other.magic_number_b > 0 {
                         self.next_nodetype = NodeType::OrangeWire(true);
                     } else {
-                        self.next_nodetype = NodeType::OrangeWire(false);
+                        if self.next_nodetype != NodeType::OrangeWire(true) {
+                            self.next_nodetype = NodeType::OrangeWire(false);
+                        }
                     }
                 }
                 _ => {}
             },
             NodeType::SaphireWire(false) => match other.nodetype {
                 NodeType::Output(true) => {
-                    if other.magic_number_a == other.magic_number_b {
+                    if other.magic_number_b > 0 {
                         self.next_nodetype = NodeType::SaphireWire(true);
                     } else {
-                        self.next_nodetype = NodeType::SaphireWire(false);
+                        if self.next_nodetype != NodeType::SaphireWire(true) {
+                            self.next_nodetype = NodeType::SaphireWire(false);
+                        }
                     }
                 }
                 _ => {}
             },
             NodeType::SaphireWire(true) => match other.nodetype {
                 NodeType::Output(true) => {
-                    if other.magic_number_a == other.magic_number_b {
+                    if other.magic_number_b > 0 {
                         self.next_nodetype = NodeType::SaphireWire(true);
                     } else {
-                        self.next_nodetype = NodeType::SaphireWire(false);
+                        if self.next_nodetype != NodeType::SaphireWire(true) {
+                            self.next_nodetype = NodeType::SaphireWire(false);
+                        }
                     }
                 }
                 _ => {}
             },
             NodeType::LimeWire(false) => match other.nodetype {
                 NodeType::Output(true) => {
-                    if other.magic_number_a == other.magic_number_b {
+                    if other.magic_number_b > 0 {
                         self.next_nodetype = NodeType::LimeWire(true);
                     } else {
-                        self.next_nodetype = NodeType::LimeWire(false);
+                        if self.next_nodetype != NodeType::LimeWire(true) {
+                            self.next_nodetype = NodeType::LimeWire(false);
+                        }
                     }
                 }
                 _ => {}
             },
             NodeType::LimeWire(true) => match other.nodetype {
                 NodeType::Output(true) => {
-                    if other.magic_number_a == other.magic_number_b {
+                    if other.magic_number_b > 0 {
                         self.next_nodetype = NodeType::LimeWire(true);
                     } else {
-                        self.next_nodetype = NodeType::LimeWire(false);
+                        if self.next_nodetype != NodeType::LimeWire(true) {
+                            self.next_nodetype = NodeType::LimeWire(false);
+                        }
                     }
                 }
                 _ => {}
@@ -409,7 +421,7 @@ fn init(input_path: &str) {
         color_node(&n, &mut new_img);
     }
     new_img.save("output.png").unwrap();
-    simulation_loop(&mappings, &mut nodes, 15, &new_img);
+    simulation_loop(&mappings, &mut nodes, 35, &new_img);
 }
 
 fn simulation_loop(

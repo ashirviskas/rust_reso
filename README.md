@@ -14,12 +14,12 @@ To run compiled version:
 [WIP]
 `./reso_rust [source_filename] [steps] [output_directory] `
 
-To run debug version
+To run debug version (~0.25s per step on new CPU)
 1. Install Rust
 2. `cargo run reso.png`
 
 
-To build and run release version (longer compile times, shorter run times)
+To build and run release version (~0.07s per step on a new CPU)
 1. Install rust
 2. Build project with `cargo build --release`
 3. Run built binary by `./target/release/reso_rust reso.png`
