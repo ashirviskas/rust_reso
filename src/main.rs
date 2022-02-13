@@ -1,10 +1,10 @@
 extern crate image;
 
-use std::path::Path;
 use bimap::BiMap;
+use std::env;
+use std::path::Path;
 
-use image::{GenericImageView, ImageBuffer, RgbImage, DynamicImage, imageops::BiLevel};
-
+use image::{DynamicImage, GenericImageView, ImageBuffer, RgbImage};
 
 #[derive(PartialEq, Clone, Copy)]
 struct PixelCoords {
@@ -29,7 +29,6 @@ struct Node {
     magic_number_a: u32, // total inputs for input nodes
     magic_number_b: u32, // active inputs for input nodes
 }
-
 
 // nodetypes and whether they are active or not
 #[derive(PartialEq, Copy, Clone, Hash, Eq)]
@@ -57,9 +56,8 @@ impl Color {
             NodeType::None(true)
         } else {
             node_type.unwrap().clone()
-
+        }
     }
-}
 }
 
 impl Node {
@@ -77,7 +75,7 @@ impl Node {
         }
     }
 
-    fn Copy(&self) -> Node {
+    fn copy(&self) -> Node {
         Node {
             nodetype: self.nodetype,
             color: self.color,
@@ -104,7 +102,7 @@ impl Node {
             self.connections.push(id);
         }
     }
-
+    // merges two nodes
     fn merge(&self, other: &Node) -> Node {
         Self {
             nodetype: self.nodetype,
@@ -139,6 +137,7 @@ impl Node {
                     if id == 0 || id == self.id || id == u32::MAX {
                         continue;
                     }
+                    // neighbours don't connect diagonally
                     if x != pixel.x && y != pixel.y {
                         continue;
                     }
@@ -150,151 +149,131 @@ impl Node {
 
     fn interact_with_neighbour(&mut self, other: &Node) {
         match self.nodetype {
-            NodeType::Input(true) => {
-                match other.nodetype {
-                    NodeType::OrangeWire(true) => {
+            NodeType::Input(true) => match other.nodetype {
+                NodeType::OrangeWire(true) => {
+                    self.magic_number_a += 1;
+                    self.magic_number_b += 1;
+                }
+                NodeType::OrangeWire(false) => {
+                    self.magic_number_a += 1;
+                }
+                NodeType::SaphireWire(true) => {
+                    self.magic_number_a += 1;
+                    self.magic_number_b += 1;
+                }
+                NodeType::SaphireWire(false) => {
+                    self.magic_number_a += 1;
+                }
+                NodeType::LimeWire(true) => {
+                    self.magic_number_a += 1;
+                    self.magic_number_b += 1;
+                }
+                NodeType::LimeWire(false) => {
+                    self.magic_number_a += 1;
+                }
+                _ => {}
+            },
+            NodeType::Output(true) => match other.nodetype {
+                NodeType::And(true) => {
+                    if other.magic_number_a == other.magic_number_b && other.magic_number_a > 0 {
                         self.magic_number_a += 1;
                         self.magic_number_b += 1;
-                    }
-                    NodeType::OrangeWire(false) => {
+                    } else {
                         self.magic_number_a += 1;
                     }
-                    NodeType::SaphireWire(true) => {
-                        self.magic_number_a += 1;
-                        self.magic_number_b += 1;
-                    }
-                    NodeType::SaphireWire(false) => {
-                        self.magic_number_a += 1;
-                    }
-                    NodeType::LimeWire(true) => {
+                }
+                NodeType::Xor(true) => {
+                    if other.magic_number_b % 2 == 1 {
                         self.magic_number_a += 1;
                         self.magic_number_b += 1;
-                    }
-                    NodeType::LimeWire(false) => {
+                    } else {
                         self.magic_number_a += 1;
                     }
-                    _ => {}
                 }
-            }
-            NodeType::Output(true) => {
-                match other.nodetype {
-                    NodeType::And(true) => {
-                        if other.magic_number_a == other.magic_number_b && other.magic_number_a > 0 {
-                            self.magic_number_a += 1;
-                            self.magic_number_b += 1;
-                        } else {
-                            self.magic_number_a += 1;
-                        }
+                NodeType::Input(true) => {
+                    if other.magic_number_b != 0 {
+                        self.magic_number_a += 1;
+                        self.magic_number_b += 1;
+                    } else {
+                        self.magic_number_a += 1;
                     }
-                    NodeType::Xor(true) => {
-                        if other.magic_number_b % 2 == 1 {
-                            self.magic_number_a += 1;
-                            self.magic_number_b += 1;
-                        } else {
-                            self.magic_number_a += 1;
-                        }
-                    }
-                    NodeType::Input(true) => {
-                        if other.magic_number_b != 0 {
-                            self.magic_number_a += 1;
-                            self.magic_number_b += 1;
-                        } else {
-                            self.magic_number_a += 1;
-                        }
-                    }
-                    _ => {}
                 }
-            }
-            NodeType::And(true) => {
-                match other.nodetype {
-                    NodeType::Input(true) => {
-                        self.magic_number_a = other.magic_number_a;
-                        self.magic_number_b = other.magic_number_b;
-                    }
-                    _ => {}
+                _ => {}
+            },
+            NodeType::And(true) => match other.nodetype {
+                NodeType::Input(true) => {
+                    self.magic_number_a = other.magic_number_a;
+                    self.magic_number_b = other.magic_number_b;
                 }
-            }
-            NodeType::Xor(true) => {
-                match other.nodetype {
-                    NodeType::Input(true) => {
-                        self.magic_number_a = other.magic_number_a;
-                        self.magic_number_b = other.magic_number_b;
-                    }
-                    _ => {}
+                _ => {}
+            },
+            NodeType::Xor(true) => match other.nodetype {
+                NodeType::Input(true) => {
+                    self.magic_number_a = other.magic_number_a;
+                    self.magic_number_b = other.magic_number_b;
                 }
-            }
-            NodeType::OrangeWire(false) => {
-                match other.nodetype {
-                    NodeType::Output(true) => {
-                        if other.magic_number_a == other.magic_number_b {
-                            self.next_nodetype = NodeType::OrangeWire(true);
-                        } else {
-                            self.next_nodetype = NodeType::OrangeWire(false);
-                        }
+                _ => {}
+            },
+            NodeType::OrangeWire(false) => match other.nodetype {
+                NodeType::Output(true) => {
+                    if other.magic_number_a == other.magic_number_b {
+                        self.next_nodetype = NodeType::OrangeWire(true);
+                    } else {
+                        self.next_nodetype = NodeType::OrangeWire(false);
                     }
-                    _ => {}
                 }
-            }
-            NodeType::OrangeWire(true) => {
-                match other.nodetype {
-                    NodeType::Output(true) => {
-                        if other.magic_number_a == other.magic_number_b {
-                            self.next_nodetype = NodeType::OrangeWire(true);
-                        } else {
-                            self.next_nodetype = NodeType::OrangeWire(false);
-                        }
+                _ => {}
+            },
+            NodeType::OrangeWire(true) => match other.nodetype {
+                NodeType::Output(true) => {
+                    if other.magic_number_a == other.magic_number_b {
+                        self.next_nodetype = NodeType::OrangeWire(true);
+                    } else {
+                        self.next_nodetype = NodeType::OrangeWire(false);
                     }
-                    _ => {}
                 }
-            }
-            NodeType::SaphireWire(false) => {
-                match other.nodetype {
-                    NodeType::Output(true) => {
-                        if other.magic_number_a == other.magic_number_b {
-                            self.next_nodetype = NodeType::SaphireWire(true);
-                        } else {
-                            self.next_nodetype = NodeType::SaphireWire(false);
-                        }
+                _ => {}
+            },
+            NodeType::SaphireWire(false) => match other.nodetype {
+                NodeType::Output(true) => {
+                    if other.magic_number_a == other.magic_number_b {
+                        self.next_nodetype = NodeType::SaphireWire(true);
+                    } else {
+                        self.next_nodetype = NodeType::SaphireWire(false);
                     }
-                    _ => {}
                 }
-            }
-            NodeType::SaphireWire(true) => {
-                match other.nodetype {
-                    NodeType::Output(true) => {
-                        if other.magic_number_a == other.magic_number_b {
-                            self.next_nodetype = NodeType::SaphireWire(true);
-                        } else {
-                            self.next_nodetype = NodeType::SaphireWire(false);
-                        }
+                _ => {}
+            },
+            NodeType::SaphireWire(true) => match other.nodetype {
+                NodeType::Output(true) => {
+                    if other.magic_number_a == other.magic_number_b {
+                        self.next_nodetype = NodeType::SaphireWire(true);
+                    } else {
+                        self.next_nodetype = NodeType::SaphireWire(false);
                     }
-                    _ => {}
                 }
-            }
-            NodeType::LimeWire(false) => {
-                match other.nodetype {
-                    NodeType::Output(true) => {
-                        if other.magic_number_a == other.magic_number_b {
-                            self.next_nodetype = NodeType::LimeWire(true);
-                        } else {
-                            self.next_nodetype = NodeType::LimeWire(false);
-                        }
+                _ => {}
+            },
+            NodeType::LimeWire(false) => match other.nodetype {
+                NodeType::Output(true) => {
+                    if other.magic_number_a == other.magic_number_b {
+                        self.next_nodetype = NodeType::LimeWire(true);
+                    } else {
+                        self.next_nodetype = NodeType::LimeWire(false);
                     }
-                    _ => {}
                 }
-            }
-            NodeType::LimeWire(true) => {
-                match other.nodetype {
-                    NodeType::Output(true) => {
-                        if other.magic_number_a == other.magic_number_b {
-                            self.next_nodetype = NodeType::LimeWire(true);
-                        } else {
-                            self.next_nodetype = NodeType::LimeWire(false);
-                        }
+                _ => {}
+            },
+            NodeType::LimeWire(true) => match other.nodetype {
+                NodeType::Output(true) => {
+                    if other.magic_number_a == other.magic_number_b {
+                        self.next_nodetype = NodeType::LimeWire(true);
+                    } else {
+                        self.next_nodetype = NodeType::LimeWire(false);
                     }
-                    _ => {}
                 }
-            }
+                _ => {}
+            },
             _ => {}
         }
     }
@@ -310,7 +289,7 @@ impl Node {
 
 fn get_node_color_mappings() -> BiMap<NodeType, Color> {
     let mut mappings = BiMap::new();
-   
+
     mappings.insert(NodeType::OrangeWire(true), Color::new(255, 128, 0));
     mappings.insert(NodeType::OrangeWire(false), Color::new(128, 64, 0));
     mappings.insert(NodeType::SaphireWire(true), Color::new(0, 128, 255));
@@ -325,7 +304,12 @@ fn get_node_color_mappings() -> BiMap<NodeType, Color> {
     mappings
 }
 
-fn explore_node_cluster(node: &Node, image: &DynamicImage, explored_pixels: &mut Vec<Vec<u32>>, mappings: &BiMap<NodeType, Color>) -> Node {
+fn explore_node_cluster(
+    node: &Node,
+    image: &DynamicImage,
+    explored_pixels: &mut Vec<Vec<u32>>,
+    mappings: &BiMap<NodeType, Color>,
+) -> Node {
     let mut prev_node = Node::new(node.id, node.color, mappings);
     prev_node = prev_node.merge(node);
     let mut cur_node = Node::new(node.id, node.color, mappings);
@@ -333,27 +317,31 @@ fn explore_node_cluster(node: &Node, image: &DynamicImage, explored_pixels: &mut
     loop {
         let mut next_node = Node::new(node.id, node.color, mappings);
         let prev_size = prev_node.pixels.len();
-        for pixel_idx in (0..cur_node.pixels.len()) {
+        for pixel_idx in 0..cur_node.pixels.len() {
             let pixel = &cur_node.pixels[pixel_idx];
             if explored_pixels[pixel.x as usize][pixel.y as usize] != 0 {
                 continue;
             }
-            explored_pixels[pixel.x as usize][pixel.y as usize] = node.id;   
+            explored_pixels[pixel.x as usize][pixel.y as usize] = node.id;
             for x in -1..2 {
                 for y in -1..2 {
                     let xx = pixel.x as i32 + x;
                     let yy = pixel.y as i32 + y;
-                    if xx >= 0 && yy >= 0 && xx < image.width() as i32 && yy < image.height() as i32 {
-                        if explored_pixels[xx as usize][yy as usize] != 0{
+                    if xx >= 0 && yy >= 0 && xx < image.width() as i32 && yy < image.height() as i32
+                    {
+                        if explored_pixels[xx as usize][yy as usize] != 0 {
                             continue;
                         }
                         let pixel_color = image.get_pixel(xx as u32, yy as u32);
-                        if pixel_color.0[0] == cur_node.color.r && pixel_color.0[1] == cur_node.color.g && pixel_color.0[2] == cur_node.color.b {
+                        if pixel_color.0[0] == cur_node.color.r
+                            && pixel_color.0[1] == cur_node.color.g
+                            && pixel_color.0[2] == cur_node.color.b
+                        {
                             // let sum: i32 = explored_pixels.iter().map(|xx| -> i32 { xx.iter().map(|&x| -> i32 { if x { 1 } else { 0 } }).sum() }).sum();
                             // println!("{} {} {}", x, y, sum);
                             // println!("{} {}", xx, yy);
                             next_node.add_pixel(xx as u32, yy as u32);
-                        } 
+                        }
                     }
                 }
             }
@@ -383,12 +371,12 @@ fn init(input_path: &str) {
     let mappings = get_node_color_mappings();
     let img = image::open(&Path::new(input_path)).unwrap();
 
-    let img_width:u32 = img.dimensions().0;
-    let img_height:u32 = img.dimensions().1;
+    let img_width: u32 = img.dimensions().0;
+    let img_height: u32 = img.dimensions().1;
 
     let mut nodes: Vec<Node> = Vec::new();
-     // TODO: map nodes by exploring neighbours instead of looking through all the pixels
-    let mut explored_pixels:Vec<Vec<u32>> = vec![vec![0; img_height as usize]; img_width as usize];
+    // TODO: map nodes by exploring neighbours instead of looking through all the pixels
+    let mut explored_pixels: Vec<Vec<u32>> = vec![vec![0; img_height as usize]; img_width as usize];
     // find and explore all the nodes
     for x in 0..img_width {
         for y in 0..img_height {
@@ -405,7 +393,6 @@ fn init(input_path: &str) {
             } else {
                 explored_pixels[x as usize][y as usize] = u32::MAX;
             }
-            
         }
     }
     // exploring first node
@@ -425,14 +412,29 @@ fn init(input_path: &str) {
     simulation_loop(&mappings, &mut nodes, 15, &new_img);
 }
 
-fn simulation_loop(mappings: &BiMap<NodeType, Color>, nodes: &mut Vec<Node>, steps: u32, image: &RgbImage) {
+fn simulation_loop(
+    mappings: &BiMap<NodeType, Color>,
+    nodes: &mut Vec<Node>,
+    steps: u32,
+    image: &RgbImage,
+) {
     for i in 0..steps {
         let mut new_img: RgbImage = ImageBuffer::new(image.width(), image.height());
-        let nodetype_turns: Vec<NodeType> = vec![NodeType::Input(true), NodeType::Xor(true), NodeType::And(true), NodeType::Output(true), NodeType::OrangeWire(true), NodeType::OrangeWire(false), NodeType::LimeWire(true), NodeType::LimeWire(false), NodeType::SaphireWire(true), NodeType::SaphireWire(false)];
+        let nodetype_turns: Vec<NodeType> = vec![
+            NodeType::Input(true),
+            NodeType::Xor(true),
+            NodeType::And(true),
+            NodeType::Output(true),
+            NodeType::OrangeWire(true),
+            NodeType::OrangeWire(false),
+            NodeType::LimeWire(true),
+            NodeType::LimeWire(false),
+            NodeType::SaphireWire(true),
+            NodeType::SaphireWire(false),
+        ];
         for nodetype_turn in nodetype_turns.iter() {
-           
             for node_idx in 0..nodes.len() {
-                let mut node = nodes.get(node_idx).unwrap().Copy();
+                let mut node = nodes.get(node_idx).unwrap().copy();
                 if node.nodetype != *nodetype_turn {
                     continue;
                 }
@@ -446,7 +448,7 @@ fn simulation_loop(mappings: &BiMap<NodeType, Color>, nodes: &mut Vec<Node>, ste
         }
 
         for node_idx in 0..nodes.len() {
-            let mut node = nodes.get(node_idx).unwrap().Copy();
+            let mut node = nodes.get(node_idx).unwrap().copy();
             node.update_next_step();
             let new_node_color = mappings.get_by_left(&node.nodetype).unwrap();
             node.color = *new_node_color;
@@ -459,9 +461,9 @@ fn simulation_loop(mappings: &BiMap<NodeType, Color>, nodes: &mut Vec<Node>, ste
         let image_path = format!("./output/output_{}.png", i);
         new_img.save(image_path).unwrap();
     }
-
-   
 }
 fn main() {
-    init("./reso.png");
+    let args: Vec<String> = env::args().collect();
+    println!("{:?}", args);
+    init(&args[1]);
 }
