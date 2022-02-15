@@ -1,9 +1,8 @@
 extern crate image;
 
 use bimap::BiMap;
+use clap::{App, Arg};
 use std::path::Path;
-use clap::{Arg, App};
-
 
 use image::{DynamicImage, GenericImageView, ImageBuffer, RgbImage};
 
@@ -34,7 +33,7 @@ struct Node {
 #[derive(PartialEq, Copy, Clone, Hash, Eq)]
 enum WireState {
     Active,
-    Inactive
+    Inactive,
 }
 
 #[derive(PartialEq, Copy, Clone, Hash, Eq)]
@@ -42,7 +41,7 @@ enum WireType {
     None,
     Orange,
     Saphire,
-    Lime
+    Lime,
 }
 
 // nodetypes and whether they are active or not
@@ -239,12 +238,30 @@ impl Node {
 fn get_node_color_mappings() -> BiMap<NodeType, Color> {
     let mut mappings = BiMap::new();
 
-    mappings.insert(NodeType::Wire(WireType::Orange, WireState::Active), Color::new(255, 128, 0));
-    mappings.insert(NodeType::Wire(WireType::Orange, WireState::Inactive), Color::new(128, 64, 0));
-    mappings.insert(NodeType::Wire(WireType::Saphire, WireState::Active), Color::new(0, 128, 255));
-    mappings.insert(NodeType::Wire(WireType::Saphire, WireState::Inactive), Color::new(0, 64, 128));
-    mappings.insert(NodeType::Wire(WireType::Lime, WireState::Active), Color::new(128, 255, 0));
-    mappings.insert(NodeType::Wire(WireType::Lime, WireState::Inactive), Color::new(64, 128, 0));
+    mappings.insert(
+        NodeType::Wire(WireType::Orange, WireState::Active),
+        Color::new(255, 128, 0),
+    );
+    mappings.insert(
+        NodeType::Wire(WireType::Orange, WireState::Inactive),
+        Color::new(128, 64, 0),
+    );
+    mappings.insert(
+        NodeType::Wire(WireType::Saphire, WireState::Active),
+        Color::new(0, 128, 255),
+    );
+    mappings.insert(
+        NodeType::Wire(WireType::Saphire, WireState::Inactive),
+        Color::new(0, 64, 128),
+    );
+    mappings.insert(
+        NodeType::Wire(WireType::Lime, WireState::Active),
+        Color::new(128, 255, 0),
+    );
+    mappings.insert(
+        NodeType::Wire(WireType::Lime, WireState::Inactive),
+        Color::new(64, 128, 0),
+    );
     mappings.insert(NodeType::Output, Color::new(128, 0, 255));
     mappings.insert(NodeType::Input, Color::new(64, 0, 128));
     mappings.insert(NodeType::Xor, Color::new(0, 255, 128));
@@ -400,7 +417,7 @@ fn simulation_loop(
                 }
                 nodes[node_idx] = node;
             }
-        }        
+        }
 
         for node_idx in 0..nodes.len() {
             let mut node = nodes.get(node_idx).unwrap().copy();
@@ -422,31 +439,43 @@ fn main() {
         .version("0.1.0")
         .author("TODO")
         .about("Implements Reso")
-        .arg(Arg::new("file")
-                 .short('f')
-                 .long("file")
-                 .takes_value(true)
-                 .help("Filepath to image to run the simulation on"))
-        .arg(Arg::new("num_steps")
-                 .short('n')
-                 .long("number")
-                 .takes_value(true)
-                 .help("Number of steps to run the simulation for"))
-        .arg(Arg::new("output_dir")
-                 .short('o')
-                 .long("output")
-                 .takes_value(true)
-                 .help("Directory to output the simulation steps to"))
-        .arg(Arg::new("last_only")
-                 .short('l')
-                 .long("last")
-                 .takes_value(false)
-                 .help("Only output the last step"))
+        .arg(
+            Arg::new("file")
+                .short('f')
+                .long("file")
+                .takes_value(true)
+                .help("Filepath to image to run the simulation on"),
+        )
+        .arg(
+            Arg::new("num_steps")
+                .short('n')
+                .long("number")
+                .takes_value(true)
+                .help("Number of steps to run the simulation for"),
+        )
+        .arg(
+            Arg::new("output_dir")
+                .short('o')
+                .long("output")
+                .takes_value(true)
+                .help("Directory to output the simulation steps to"),
+        )
+        .arg(
+            Arg::new("last_only")
+                .short('l')
+                .long("last")
+                .takes_value(false)
+                .help("Only output the last step"),
+        )
         .get_matches();
 
     let input_filepath = matches.value_of("file").unwrap_or("reso.png");
     let output_dir = matches.value_of("output_dir").unwrap_or("./output/");
 
-    let num_steps = matches.value_of("num_steps").unwrap_or("1").parse::<u32>().unwrap();
+    let num_steps = matches
+        .value_of("num_steps")
+        .unwrap_or("1")
+        .parse::<u32>()
+        .unwrap();
     init(input_filepath, output_dir, num_steps);
 }
