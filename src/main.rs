@@ -1,8 +1,9 @@
 extern crate image;
 
 use bimap::BiMap;
-use std::env;
 use std::path::Path;
+use clap::{Arg, App};
+
 
 use image::{DynamicImage, GenericImageView, ImageBuffer, RgbImage};
 
@@ -379,7 +380,7 @@ fn color_node(node: &Node, image: &mut RgbImage) {
     }
 }
 
-fn init(input_path: &str) {
+fn init(input_path: &str, output_dir: &str, num_steps: u32) {
     let mappings = get_node_color_mappings();
     let img = image::open(&Path::new(input_path)).unwrap();
 
@@ -415,20 +416,15 @@ fn init(input_path: &str) {
         let n = nodes.get_mut(n_idx).unwrap();
         n.find_neighbours(&mut explored_pixels);
     }
-    let mut new_img: RgbImage = ImageBuffer::new(img_width, img_height);
-
-    for n in &nodes {
-        color_node(&n, &mut new_img);
-    }
-    new_img.save("output.png").unwrap();
-    simulation_loop(&mappings, &mut nodes, 35, &new_img);
+    simulation_loop(&mappings, &mut nodes, num_steps, &img, output_dir);
 }
 
 fn simulation_loop(
     mappings: &BiMap<NodeType, Color>,
     nodes: &mut Vec<Node>,
     steps: u32,
-    image: &RgbImage,
+    image: &DynamicImage,
+    output_dir: &str,
 ) {
     for i in 0..steps {
         let mut new_img: RgbImage = ImageBuffer::new(image.width(), image.height());
@@ -470,12 +466,40 @@ fn simulation_loop(
             let node = nodes.get_mut(node_idx).unwrap();
             color_node(&node, &mut new_img);
         }
-        let image_path = format!("./output/output_{}.png", i);
+        let image_path = format!("{}/output_{}.png", output_dir, i);
         new_img.save(image_path).unwrap();
     }
 }
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    println!("{:?}", args);
-    init(&args[1]);
+    let matches = App::new("Rust Reso implementation")
+        .version("0.1.0")
+        .author("TODO")
+        .about("Implements Reso")
+        .arg(Arg::new("file")
+                 .short('f')
+                 .long("file")
+                 .takes_value(true)
+                 .help("Filepath to image to run the simulation on"))
+        .arg(Arg::new("num_steps")
+                 .short('n')
+                 .long("number")
+                 .takes_value(true)
+                 .help("Number of steps to run the simulation for"))
+        .arg(Arg::new("output_dir")
+                 .short('o')
+                 .long("output")
+                 .takes_value(true)
+                 .help("Directory to output the simulation steps to"))
+        .arg(Arg::new("last_only")
+                 .short('l')
+                 .long("last")
+                 .takes_value(false)
+                 .help("Only output the last step"))
+        .get_matches();
+
+    let input_filepath = matches.value_of("file").unwrap_or("reso.png");
+    let output_dir = matches.value_of("output_dir").unwrap_or("./output/");
+
+    let num_steps = matches.value_of("num_steps").unwrap_or("1").parse::<u32>().unwrap();
+    init(input_filepath, output_dir, num_steps);
 }
