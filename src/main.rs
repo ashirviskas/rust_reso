@@ -31,17 +31,29 @@ struct Node {
     magic_number_b: u32, // active inputs for input nodes
 }
 
+#[derive(PartialEq, Copy, Clone, Hash, Eq)]
+enum WireState {
+    Active,
+    Inactive
+}
+
+#[derive(PartialEq, Copy, Clone, Hash, Eq)]
+enum WireType {
+    None,
+    Orange,
+    Saphire,
+    Lime
+}
+
 // nodetypes and whether they are active or not
 #[derive(PartialEq, Copy, Clone, Hash, Eq)]
 enum NodeType {
-    Input(bool),
-    Output(bool),
-    OrangeWire(bool),
-    SaphireWire(bool),
-    LimeWire(bool),
-    Xor(bool),
-    And(bool),
-    None(bool),
+    Input,
+    Output,
+    Wire(WireType, WireState),
+    Xor,
+    And,
+    None,
 }
 
 // mapping node types to colors
@@ -54,7 +66,7 @@ impl Color {
     fn to_nodetype(&self, mappings: &BiMap<NodeType, Color>) -> NodeType {
         let node_type = mappings.get_by_right(&self);
         if node_type == None {
-            NodeType::None(true)
+            NodeType::None
         } else {
             node_type.unwrap().clone()
         }
@@ -70,7 +82,7 @@ impl Node {
             pixels: Vec::new(),
             connections: Vec::new(),
             explored: false,
-            next_nodetype: NodeType::None(true),
+            next_nodetype: NodeType::None,
             magic_number_a: 0,
             magic_number_b: 0,
         }
@@ -150,32 +162,18 @@ impl Node {
 
     fn interact_with_neighbour(&mut self, other: &Node) {
         match self.nodetype {
-            NodeType::Input(true) => match other.nodetype {
-                NodeType::OrangeWire(true) => {
+            NodeType::Input => match other.nodetype {
+                NodeType::Wire(_, WireState::Active) => {
                     self.magic_number_a += 1;
                     self.magic_number_b += 1;
                 }
-                NodeType::OrangeWire(false) => {
-                    self.magic_number_a += 1;
-                }
-                NodeType::SaphireWire(true) => {
-                    self.magic_number_a += 1;
-                    self.magic_number_b += 1;
-                }
-                NodeType::SaphireWire(false) => {
-                    self.magic_number_a += 1;
-                }
-                NodeType::LimeWire(true) => {
-                    self.magic_number_a += 1;
-                    self.magic_number_b += 1;
-                }
-                NodeType::LimeWire(false) => {
+                NodeType::Wire(_, WireState::Inactive) => {
                     self.magic_number_a += 1;
                 }
                 _ => {}
             },
-            NodeType::Output(true) => match other.nodetype {
-                NodeType::And(true) => {
+            NodeType::Output => match other.nodetype {
+                NodeType::And => {
                     if other.magic_number_a == other.magic_number_b && other.magic_number_a > 0 {
                         self.magic_number_a += 1;
                         self.magic_number_b += 1;
@@ -183,7 +181,7 @@ impl Node {
                         self.magic_number_a += 1;
                     }
                 }
-                NodeType::Xor(true) => {
+                NodeType::Xor => {
                     if other.magic_number_b % 2 == 1 {
                         self.magic_number_a += 1;
                         self.magic_number_b += 1;
@@ -191,7 +189,7 @@ impl Node {
                         self.magic_number_a += 1;
                     }
                 }
-                NodeType::Input(true) => {
+                NodeType::Input => {
                     if other.magic_number_b != 0 {
                         self.magic_number_a += 1;
                         self.magic_number_b += 1;
@@ -201,88 +199,26 @@ impl Node {
                 }
                 _ => {}
             },
-            NodeType::And(true) => match other.nodetype {
-                NodeType::Input(true) => {
+            NodeType::And => match other.nodetype {
+                NodeType::Input => {
                     self.magic_number_a = other.magic_number_a;
                     self.magic_number_b = other.magic_number_b;
                 }
                 _ => {}
             },
-            NodeType::Xor(true) => match other.nodetype {
-                NodeType::Input(true) => {
+            NodeType::Xor => match other.nodetype {
+                NodeType::Input => {
                     self.magic_number_a = other.magic_number_a;
                     self.magic_number_b = other.magic_number_b;
                 }
                 _ => {}
             },
-            NodeType::OrangeWire(false) => match other.nodetype {
-                NodeType::Output(true) => {
+            NodeType::Wire(x0, x1) => match other.nodetype {
+                NodeType::Output => {
                     if other.magic_number_b > 0 {
-                        self.next_nodetype = NodeType::OrangeWire(true);
+                        self.next_nodetype = NodeType::Wire(x0, WireState::Active);
                     } else {
-                        if self.next_nodetype != NodeType::OrangeWire(true) {
-                            self.next_nodetype = NodeType::OrangeWire(false);
-                        }
-                    }
-                }
-                _ => {}
-            },
-            NodeType::OrangeWire(true) => match other.nodetype {
-                NodeType::Output(true) => {
-                    if other.magic_number_b > 0 {
-                        self.next_nodetype = NodeType::OrangeWire(true);
-                    } else {
-                        if self.next_nodetype != NodeType::OrangeWire(true) {
-                            self.next_nodetype = NodeType::OrangeWire(false);
-                        }
-                    }
-                }
-                _ => {}
-            },
-            NodeType::SaphireWire(false) => match other.nodetype {
-                NodeType::Output(true) => {
-                    if other.magic_number_b > 0 {
-                        self.next_nodetype = NodeType::SaphireWire(true);
-                    } else {
-                        if self.next_nodetype != NodeType::SaphireWire(true) {
-                            self.next_nodetype = NodeType::SaphireWire(false);
-                        }
-                    }
-                }
-                _ => {}
-            },
-            NodeType::SaphireWire(true) => match other.nodetype {
-                NodeType::Output(true) => {
-                    if other.magic_number_b > 0 {
-                        self.next_nodetype = NodeType::SaphireWire(true);
-                    } else {
-                        if self.next_nodetype != NodeType::SaphireWire(true) {
-                            self.next_nodetype = NodeType::SaphireWire(false);
-                        }
-                    }
-                }
-                _ => {}
-            },
-            NodeType::LimeWire(false) => match other.nodetype {
-                NodeType::Output(true) => {
-                    if other.magic_number_b > 0 {
-                        self.next_nodetype = NodeType::LimeWire(true);
-                    } else {
-                        if self.next_nodetype != NodeType::LimeWire(true) {
-                            self.next_nodetype = NodeType::LimeWire(false);
-                        }
-                    }
-                }
-                _ => {}
-            },
-            NodeType::LimeWire(true) => match other.nodetype {
-                NodeType::Output(true) => {
-                    if other.magic_number_b > 0 {
-                        self.next_nodetype = NodeType::LimeWire(true);
-                    } else {
-                        if self.next_nodetype != NodeType::LimeWire(true) {
-                            self.next_nodetype = NodeType::LimeWire(false);
-                        }
+                        self.next_nodetype = NodeType::Wire(x0, WireState::Inactive);
                     }
                 }
                 _ => {}
@@ -291,9 +227,9 @@ impl Node {
         }
     }
     fn update_next_step(&mut self) {
-        if self.next_nodetype != NodeType::None(true) {
+        if self.next_nodetype != NodeType::None {
             self.nodetype = self.next_nodetype;
-            self.next_nodetype = NodeType::None(true);
+            self.next_nodetype = NodeType::None;
         }
         self.magic_number_a = 0;
         self.magic_number_b = 0;
@@ -303,17 +239,17 @@ impl Node {
 fn get_node_color_mappings() -> BiMap<NodeType, Color> {
     let mut mappings = BiMap::new();
 
-    mappings.insert(NodeType::OrangeWire(true), Color::new(255, 128, 0));
-    mappings.insert(NodeType::OrangeWire(false), Color::new(128, 64, 0));
-    mappings.insert(NodeType::SaphireWire(true), Color::new(0, 128, 255));
-    mappings.insert(NodeType::SaphireWire(false), Color::new(0, 64, 128));
-    mappings.insert(NodeType::LimeWire(true), Color::new(128, 255, 0));
-    mappings.insert(NodeType::LimeWire(false), Color::new(64, 128, 0));
-    mappings.insert(NodeType::Output(true), Color::new(128, 0, 255));
-    mappings.insert(NodeType::Input(true), Color::new(64, 0, 128));
-    mappings.insert(NodeType::Xor(true), Color::new(0, 255, 128));
-    mappings.insert(NodeType::And(true), Color::new(0, 128, 64));
-    mappings.insert(NodeType::None(true), Color::new(0, 0, 0));
+    mappings.insert(NodeType::Wire(WireType::Orange, WireState::Active), Color::new(255, 128, 0));
+    mappings.insert(NodeType::Wire(WireType::Orange, WireState::Inactive), Color::new(128, 64, 0));
+    mappings.insert(NodeType::Wire(WireType::Saphire, WireState::Active), Color::new(0, 128, 255));
+    mappings.insert(NodeType::Wire(WireType::Saphire, WireState::Inactive), Color::new(0, 64, 128));
+    mappings.insert(NodeType::Wire(WireType::Lime, WireState::Active), Color::new(128, 255, 0));
+    mappings.insert(NodeType::Wire(WireType::Lime, WireState::Inactive), Color::new(64, 128, 0));
+    mappings.insert(NodeType::Output, Color::new(128, 0, 255));
+    mappings.insert(NodeType::Input, Color::new(64, 0, 128));
+    mappings.insert(NodeType::Xor, Color::new(0, 255, 128));
+    mappings.insert(NodeType::And, Color::new(0, 128, 64));
+    mappings.insert(NodeType::None, Color::new(0, 0, 0));
     mappings
 }
 
@@ -398,7 +334,7 @@ fn init(input_path: &str, output_dir: &str, num_steps: u32) {
             }
             let pixel = img.get_pixel(x, y);
             let color = Color::new(pixel[0], pixel[1], pixel[2]);
-            if color.to_nodetype(&mappings) != NodeType::None(true) {
+            if color.to_nodetype(&mappings) != NodeType::None {
                 let mut node = Node::new((nodes.len() + 1) as u32, color, &mappings);
                 node.add_pixel(x, y);
                 node = explore_node_cluster(&node, &img, &mut explored_pixels, &mappings);
@@ -429,17 +365,13 @@ fn simulation_loop(
     for i in 0..steps {
         let mut new_img: RgbImage = ImageBuffer::new(image.width(), image.height());
         let nodetype_turns: Vec<NodeType> = vec![
-            NodeType::Input(true),
-            NodeType::Xor(true),
-            NodeType::And(true),
-            NodeType::Output(true),
-            NodeType::OrangeWire(true),
-            NodeType::OrangeWire(false),
-            NodeType::LimeWire(true),
-            NodeType::LimeWire(false),
-            NodeType::SaphireWire(true),
-            NodeType::SaphireWire(false),
+            NodeType::Input,
+            NodeType::Xor,
+            NodeType::And,
+            NodeType::Output,
+            // NodeType::Wire(WireType::None, WireState::Active),
         ];
+        // loop for nodetype turns
         for nodetype_turn in nodetype_turns.iter() {
             for node_idx in 0..nodes.len() {
                 let mut node = nodes.get(node_idx).unwrap().copy();
@@ -454,6 +386,21 @@ fn simulation_loop(
                 nodes[node_idx] = node;
             }
         }
+        // loop for wires only
+        for nodetype_turn in nodetype_turns.iter() {
+            for node_idx in 0..nodes.len() {
+                let mut node = nodes.get(node_idx).unwrap().copy();
+                if node.nodetype == *nodetype_turn {
+                    continue;
+                }
+                for node_neighbour_idx in 0..node.connections.len() {
+                    let neighbour_idx = node.connections[node_neighbour_idx] - 1;
+                    let neighbour = nodes.get(neighbour_idx as usize).unwrap();
+                    node.interact_with_neighbour(&neighbour);
+                }
+                nodes[node_idx] = node;
+            }
+        }        
 
         for node_idx in 0..nodes.len() {
             let mut node = nodes.get(node_idx).unwrap().copy();
