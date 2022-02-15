@@ -12,6 +12,7 @@ _instructions for linux only, but with minor changes it should work on other ope
 
 To run compiled version:
 `./reso_rust`
+
     USAGE:
         reso_rust [OPTIONS]
 
