@@ -26,8 +26,8 @@ struct Node {
     nodetype: NodeType,
     explored: bool,
     next_nodetype: NodeType,
-    magic_number_a: u32, // total inputs for input nodes
-    magic_number_b: u32, // active inputs for input nodes
+    magic_number_a: u32, // total inputs for input/logic nodes
+    magic_number_b: u32, // active inputs for input/logic nodes
 }
 
 #[derive(PartialEq, Copy, Clone, Hash, Eq)]
@@ -379,6 +379,7 @@ fn simulation_loop(
     image: &DynamicImage,
     output_dir: &str,
 ) {
+    // TODO: Move out single iteration out of the loop
     for i in 0..steps {
         let mut new_img: RgbImage = ImageBuffer::new(image.width(), image.height());
         let nodetype_turns: Vec<NodeType> = vec![
@@ -388,7 +389,7 @@ fn simulation_loop(
             NodeType::Output,
             // NodeType::Wire(WireType::None, WireState::Active),
         ];
-        // loop for nodetype turns
+        // loop for nodetype_turns types
         for nodetype_turn in nodetype_turns.iter() {
             for node_idx in 0..nodes.len() {
                 let mut node = nodes.get(node_idx).unwrap().copy();
